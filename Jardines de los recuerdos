@@ -40,6 +40,20 @@
 
   /* HUD (vidas/puntos) más visible */
   .hud { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; color:#1e6b2a; font-size:1.3rem; font-weight:bold; }
+  /* Fondo específico para la caja de Vidas (solicitud) */
+  #livesDisplay {
+    background: rgba(255,255,255,0.95);
+    padding:6px 10px;
+    border-radius:10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  #scoreDisplay {
+    /* mantengo visual consistente, opcional */
+    background: rgba(255,255,255,0.85);
+    padding:6px 10px;
+    border-radius:8px;
+  }
+
   #elements {
     display:grid;
     gap:14px;
@@ -165,8 +179,15 @@ const rounds=[
   { name:"A juntar la cosecha 🧺", pool:['🥕','🌽','🍅','🍆','🥒','🥔','🥦','🧅'], cells:8 }
 ];
 
-let currentRound=1,sequence=[],playerIndex=0,sequenceCount=0,score=0,lives=3,listening=false,musicOn=false;
-let correctMoves=0,errors=0;
+let currentRound=1,
+    sequence=[],
+    playerIndex=0,
+    sequenceCount=0,
+    score=0,
+    lives=3,
+    listening=false,
+    musicOn=false;
+let correctMoves=0, errors=0, sequencesCompleted=0; // <- nueva variable para contar secuencias completadas
 
 function setBubble(text,ms=3000,isError=false){
   speechBubble.textContent=text;
@@ -233,11 +254,14 @@ function onCellPressed(idx){
     else { setTimeout(()=>showSequence(sequence),900); }
     return;
   }
-  safePlay(sndSeq); correctMoves++;
+  safePlay(sndSeq);
+  correctMoves++;
   const cell=[...elementsWrap.querySelectorAll('.cell')][idx];
   if(cell){ cell.classList.add('active'); setTimeout(()=>cell.classList.remove('active'),220); }
   playerIndex++; score+=10; updateHUD();
   if(playerIndex>=sequence.length){
+    // el jugador completó UNA secuencia correctamente
+    sequencesCompleted++; // <-- contamos secuencia completada (máx 6 en la partida)
     score+=20; updateHUD(); sequenceCount++; listening=false;
     if(sequenceCount<2){ setBubble('¡Muy bien! Otra secuencia.',3000); setTimeout(()=>startNewSequence(),1000);}
     else { setBubble('¡Ronda completada! 🎉',3000); currentRound++; setTimeout(()=>startRound(),1500); }
@@ -245,15 +269,15 @@ function onCellPressed(idx){
 }
 function gameOverWin(){
   gameContainer.style.display='none'; winOverlay.style.display='flex';
-  winStats.textContent=`Puntos: ${score} | Rondas completadas: ${rounds.length} | Secuencias correctas: ${correctMoves} | Errores: ${errors}`;
+  winStats.textContent=`Puntos: ${score} | Rondas completadas: ${rounds.length} | Secuencias completadas: ${sequencesCompleted} | Errores: ${errors}`;
 }
 function gameOverLose(){
   gameContainer.style.display='none'; loseOverlay.style.display='flex';
-  loseStats.textContent=`Puntos: ${score} | Rondas alcanzadas: ${currentRound-1} | Secuencias correctas: ${correctMoves} | Errores: ${errors}`;
+  loseStats.textContent=`Puntos: ${score} | Rondas alcanzadas: ${currentRound-1} | Secuencias completadas: ${sequencesCompleted} | Errores: ${errors}`;
 }
 function startBtnClicked(){
   startScreen.style.display='none'; gameContainer.style.display='block';
-  currentRound=1; score=0; lives=3; sequenceCount=0; playerIndex=0; correctMoves=0; errors=0;
+  currentRound=1; score=0; lives=3; sequenceCount=0; playerIndex=0; correctMoves=0; errors=0; sequencesCompleted=0;
   updateHUD(); setTimeout(()=>startRound(),400);
 }
 startBtn.addEventListener('click',startBtnClicked);
